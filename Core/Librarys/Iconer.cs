@@ -4,6 +4,8 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -21,14 +23,20 @@ namespace Core.Librarys
         public static string Get(string processname, string desc)
         {
             string iconName = (processname + desc).Replace(" ", "") + ".png";
-            string iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory,
-                         "AppIcons", iconName);
             if (processname.StartsWith("website://"))
             {
-                return "pack://application:,,,/Tai;component/Resources/Icons/website.png";
+                iconName = processname.Replace("website://", "") + ".png";
             }
+            string iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory,
+                         "AppIcons", iconName);
+           
             if (!File.Exists(iconPath))
             {
+                if (processname.StartsWith("website://"))
+                {
+                    return "pack://application:,,,/Tai;component/Resources/Icons/website.png";
+                }
+
                 return "pack://application:,,,/Tai;component/Resources/Icons/defaultIcon.png";
             }
             return iconPath;
@@ -40,23 +48,61 @@ namespace Core.Librarys
         /// <param name="processname"></param>
         /// <param name="desc"></param>
         /// <returns>返回提取到程序目录下的路径</returns>
-        public static string ExtractFromFile(string file, string processname, string desc, bool isCheck = true)
+        public static async Task ExtractFromFile(string file, string processname, string desc, bool isCheck = true)
         {
             try
             {
+                
                 string iconName = (processname + desc).Replace(" ", "") + ".png";
+                if (processname.Equals("Chrome"))
+                {
+                    return;
+                }
+                
+                if (processname.StartsWith("website://"))
+                {
+                    iconName=processname.Replace("website://","") + ".png";
+                }
+
                 string iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory,
                              "AppIcons", iconName);
+
                 if (isCheck && File.Exists(iconPath))
                 {
-                    return iconPath;
+                    return ;
                 }
                 string dir = Path.GetDirectoryName(iconPath);
                 if (!Directory.Exists(dir))
                 {
                     Directory.CreateDirectory(dir);
                 }
-               
+                if (processname.StartsWith("website://"))
+                   
+                {
+                    
+                    string uri = String.Format("http://{0}/favicon.ico",processname.Substring(10));
+                    Logger.Warn(uri);
+                    var client = new HttpClient();
+                     var data  = await client.GetAsync(uri) ;
+                    if (data.StatusCode!=HttpStatusCode.OK)
+                    {
+                        return;
+                    }
+                    var content = await data.Content.ReadAsStreamAsync();
+                    var icon = IconBitmapDecoder.Create(content, BitmapCreateOptions.PreservePixelFormat,
+                 BitmapCacheOption.None);
+                    using (var fileStream = new FileStream(iconPath, FileMode.Create))
+                    {
+                        var encoder = new PngBitmapEncoder();
+                        encoder.Frames.Add(icon.Frames[0]);
+                        encoder.Save(fileStream);
+                        return;
+                    }
+
+
+
+                    
+                }
 
                 //  uwp app icon handle
 
@@ -106,7 +152,7 @@ namespace Core.Librarys
                         }
                         else
                         {
-                            return string.Empty;
+                            return  ;
                         }
 
                         if (!string.IsNullOrEmpty(iconFile) && File.Exists(iconFile))
@@ -114,9 +160,9 @@ namespace Core.Librarys
                             //  copy to tai dir
 
                             File.Copy(iconFile, iconPath);
-                            return iconPath;
+                            return  ;
                         }
-                        return string.Empty;
+                        return  ;
                     }
                 }
 
@@ -132,12 +178,12 @@ namespace Core.Librarys
                     encoder.Frames.Add(BitmapFrame.Create(ToImageSource(ico) as BitmapSource));
                     encoder.Save(fileStream);
                 }
-                return iconPath;
+                return  ;
             }
             catch (Exception ex)
             {
                 Logger.Error(ex.Message + "，File: " + file + "，Process: " + processname);
-                return string.Empty;
+                return  ;
             }
         }
         public static ImageSource ToImageSource(Icon icon)

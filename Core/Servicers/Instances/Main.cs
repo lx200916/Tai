@@ -130,10 +130,10 @@ namespace Core.Servicers.Instances
             }
         }
 
-        private void Observer_OnAppActive(string processName, string description, string file)
+        private async void Observer_OnAppActive(string processName, string description, string file)
         {
 
-            if (activeProcess != processName && activeProcessFile != file)
+            if (activeProcess != processName && (activeProcessFile != file||file.Contains("Websites")))
             {
                 UpdateTime();
             }
@@ -150,7 +150,8 @@ namespace Core.Servicers.Instances
                 activeWatcher.Restart();
 
                 //  提取icon
-                Iconer.ExtractFromFile(file, processName, description);
+               await Iconer.ExtractFromFile(file, processName, description);
+
             }
             else
             {

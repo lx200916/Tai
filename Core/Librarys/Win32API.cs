@@ -61,8 +61,13 @@ namespace Core.Librarys
 
         private const uint WINEVENT_OUTOFCONTEXT = 0;
         private const uint EVENT_SYSTEM_FOREGROUND = 3;
+        private static  Dictionary<int, AutomationPropertyChangedEventHandler> chromeEventHandles=new Dictionary<int, AutomationPropertyChangedEventHandler>();
         public static string Chrome_Link(AutomationElement element)
         {
+            try
+            {
+
+            
             Condition propCondition = new PropertyCondition(
 AutomationElement.ClassNameProperty, "Chrome_RenderWidgetHostHWND", PropertyConditionFlags.IgnoreCase);
             var rendar = element.FindFirst(TreeScope.Children, propCondition);
@@ -71,16 +76,25 @@ AutomationElement.ClassNameProperty, "Chrome_RenderWidgetHostHWND", PropertyCond
                 return "";
             }
             var value = rendar.GetCurrentPattern(ValuePattern.Pattern) as ValuePattern;
+            if (value == null)
+            {
+                return "";
+
+            }
 
             var url = value.Current.Value;
             Console.WriteLine(url);
-            try
-            {
+            
                 var uri = new Uri(url);
+                if(uri.Scheme=="chrome"||uri.Scheme== "chrome-extension")
+                {
+                    return "";
+                }
                 return uri.Host;
             }
-            catch
+            catch(Exception ex)
             {
+                Logger.Error(ex.ToString());
                 return "";
             }
         }
@@ -91,14 +105,20 @@ AutomationElement.ClassNameProperty, "Chrome_RenderWidgetHostHWND", PropertyCond
             {
                 return "Chrome";
             }
-            Automation.AddAutomationPropertyChangedEventHandler(element, TreeScope.Element, new AutomationPropertyChangedEventHandler(nameChangedCallback
-                ), AutomationElement.NameProperty);
+            if (!chromeEventHandles.ContainsKey(element.Current.NativeWindowHandle))
+            {
+                var handler = new AutomationPropertyChangedEventHandler(nameChangedCallback
+              );
+                Automation.AddAutomationPropertyChangedEventHandler(element, TreeScope.Element,handler , AutomationElement.NameProperty);
+                chromeEventHandles.Add(element.Current.NativeWindowHandle, handler);
+            }
+          
    
             var link=Chrome_Link(element);
-            if (link == "")
-            {
-                return "Chrome";
-            }
+          //  if (link == "")
+            //{
+              //  return "Chrome";
+           // }
             Console.WriteLine(link);
 
             return link;

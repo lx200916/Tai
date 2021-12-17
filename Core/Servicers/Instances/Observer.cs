@@ -39,9 +39,13 @@ namespace Core.Servicers.Instances
             if (sourceElement != null)
             {
                 string host = Win32API.Chrome_Link(sourceElement);
-                if(host != "")
+                if(host.Length>0)
                 {
-                    EventInvoke("website://"+host,host, "chrome");
+                    EventInvoke("website://"+host,host, "Websites");
+                }
+                else
+                {
+                    EventInvoke("Chrome", "Chrome", "Other Websites or ChromeApps");
                 }
 
             }
@@ -80,8 +84,18 @@ namespace Core.Servicers.Instances
                 {
                     Debug.WriteLine("chrome:" + processFileName);
                     processDescription = Win32API.Chrome_AppName(hwnd, (uint)processID, ChromeCallback);
-                    processName = "website://"+ processDescription;
-                    processFileName = "chrome";
+                    if(processDescription.Length > 0)
+                    {
+                        processName = "website://" + processDescription;
+                        processFileName = "Websites";
+                    }
+                    else
+                    {
+                        processDescription = "Chrome";
+                           processName = "Chrome";
+                        processFileName = "Other Websites or ChromeApps";
+                    }
+                   
 
                 }
                 else {
@@ -117,7 +131,7 @@ namespace Core.Servicers.Instances
         private void EventInvoke(string processName, string description, string filename)
         {
             //  防止重复和错误响应
-            if (string.IsNullOrEmpty(processName) || string.IsNullOrEmpty(filename) || !(File.Exists(filename)||filename=="chrome"))
+            if (string.IsNullOrEmpty(processName) || string.IsNullOrEmpty(filename) || !( processName == "Chrome"|| processName.StartsWith("website://")|| File.Exists(filename) ))
             {
                 return;
             }
