@@ -23,6 +23,10 @@ namespace Core.Librarys
             string iconName = (processname + desc).Replace(" ", "") + ".png";
             string iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory,
                          "AppIcons", iconName);
+            if (processname.StartsWith("website://"))
+            {
+                return "pack://application:,,,/Tai;component/Resources/Icons/website.png";
+            }
             if (!File.Exists(iconPath))
             {
                 return "pack://application:,,,/Tai;component/Resources/Icons/defaultIcon.png";
@@ -52,6 +56,7 @@ namespace Core.Librarys
                 {
                     Directory.CreateDirectory(dir);
                 }
+               
 
                 //  uwp app icon handle
 

@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Automation;
 
 namespace Core.Librarys
 {
@@ -60,7 +61,52 @@ namespace Core.Librarys
 
         private const uint WINEVENT_OUTOFCONTEXT = 0;
         private const uint EVENT_SYSTEM_FOREGROUND = 3;
-        public static string UWP_AppName(IntPtr hWnd, uint pID)
+        public static string Chrome_Link(AutomationElement element)
+        {
+            Condition propCondition = new PropertyCondition(
+AutomationElement.ClassNameProperty, "Chrome_RenderWidgetHostHWND", PropertyConditionFlags.IgnoreCase);
+            var rendar = element.FindFirst(TreeScope.Children, propCondition);
+            if (rendar == null)
+            {
+                return "";
+            }
+            var value = rendar.GetCurrentPattern(ValuePattern.Pattern) as ValuePattern;
+
+            var url = value.Current.Value;
+            Console.WriteLine(url);
+            try
+            {
+                var uri = new Uri(url);
+                return uri.Host;
+            }
+            catch
+            {
+                return "";
+            }
+        }
+        public static string Chrome_AppName(IntPtr hWnd, uint pID, Servicers.Instances.Observer.NameChangedCallback nameChangedCallback )
+        {
+           var element= AutomationElement.FromHandle(hWnd);
+            if (element == null)
+            {
+                return "Chrome";
+            }
+            Automation.AddAutomationPropertyChangedEventHandler(element, TreeScope.Element, new AutomationPropertyChangedEventHandler(nameChangedCallback
+                ), AutomationElement.NameProperty);
+   
+            var link=Chrome_Link(element);
+            if (link == "")
+            {
+                return "Chrome";
+            }
+            Console.WriteLine(link);
+
+            return link;
+
+
+
+        }
+            public static string UWP_AppName(IntPtr hWnd, uint pID)
         {
             WINDOWINFO windowinfo = new WINDOWINFO();
             windowinfo.ownerpid = pID;
